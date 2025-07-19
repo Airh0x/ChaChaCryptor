@@ -2,7 +2,7 @@
 //  1. Add CryptoSwift via Swift Package Manager.
 //     https://github.com/CryptoSwift/CryptoSwift
 //  2. In your project's Info.plist, add "Privacy - Face ID Usage Description".
-//  3. Ntional Security Level File Protector
+//
 
 import SwiftUI
 import Combine
@@ -46,6 +46,7 @@ enum CryptoError: Error, LocalizedError {
         }
     }
 }
+
 
 // MARK: - ContentView
 struct ContentView: View {
@@ -123,7 +124,7 @@ struct ContentView: View {
 
             }
             .padding()
-            .navigationTitle("Secure Your Files")
+            .navigationTitle("Secure your Files")
             .navigationBarTitleDisplayMode(.inline)
             .blur(radius: isShowingBlur ? 15 : 0)
             .onChange(of: scenePhase) { _, newPhase in
@@ -163,18 +164,32 @@ class CryptoManager: ObservableObject {
 
     func resetMasterKey() async {
         log("🔥 Resetting master key...")
+
+        // 1. First, always request authentication directly.
+        let context = LAContext()
+        let reason = "Authentication is required to delete the master key."
+
         do {
-            try enclaveManager.deleteKey()
-            log("✅ Master key has been permanently deleted.")
-            log("ℹ️ A new key will be generated on the next operation.")
-        } catch let error as LocalizedError {
-            log("❌ Error resetting key: \(error.localizedDescription)")
+            // This will always show the Face ID / Touch ID prompt, regardless of key presence.
+            let authenticated = try await context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: reason)
+
+            // 2. Only if authentication succeeds, proceed with deletion.
+            if authenticated {
+                log("🔑 Authentication successful. Proceeding with deletion...")
+                try enclaveManager.deleteKey() // Deletes the key if it exists.
+                log("✅ Master key has been deleted (if it existed).")
+                log("ℹ️ A new key will be generated on the next operation.")
+            } else {
+                // This case is rare with .deviceOwnerAuthentication but included for completeness.
+                 log("❌ Authentication not granted. Key reset canceled.")
+            }
+
         } catch {
-            log("❌ An unexpected error occurred while resetting key.")
+            // This catches failures, such as the user tapping "Cancel".
+            log("❌ Authentication failed or was canceled. Key reset canceled.")
         }
     }
     
-    // --- ▼▼▼ ファイル名バグの修正箇所 ▼▼▼ ---
     func processFile(result: Result<URL, Error>) async {
         logMessages = []
         
@@ -182,9 +197,7 @@ class CryptoManager: ObservableObject {
             let sourceURL = try result.get()
             log("📁 Selected file: \(sourceURL.lastPathComponent)")
             
-            // 修正 1: 先に出力ファイル名を決定する
             let newName = getNewFilename(original: sourceURL.lastPathComponent)
-            // 修正 2: 決定したファイル名で一時ファイルのURLを作成する
             let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(newName)
 
             guard sourceURL.startAccessingSecurityScopedResource() else {
@@ -210,12 +223,18 @@ class CryptoManager: ObservableObject {
             log("🔑 Master key reference obtained.")
             
             let modeForTask = self.currentMode
+            
             try await Task.detached {
+                // Define constants here, inside the nonisolated context, to prevent sharing issues.
+                let nonceSize = 12
+                let tagSize = 16
+                let bufferSize = 4096
+                
                 switch modeForTask {
                 case .encrypt:
-                    try Self.encryptStream(masterKey: masterKey, inputStream: inputStream, outputStream: outputStream)
+                    try Self.encryptStream(masterKey: masterKey, inputStream: inputStream, outputStream: outputStream, nonceSize: nonceSize, bufferSize: bufferSize)
                 case .decrypt:
-                    try Self.decryptStream(masterKey: masterKey, inputStream: inputStream, outputStream: outputStream)
+                    try Self.decryptStream(masterKey: masterKey, inputStream: inputStream, outputStream: outputStream, nonceSize: nonceSize, tagSize: tagSize, bufferSize: bufferSize)
                 }
             }.value
 
@@ -224,7 +243,6 @@ class CryptoManager: ObservableObject {
             case .decrypt: log("✅ Decryption successful!")
             }
 
-            // 修正 3: 正しいファイル名を持つtempURLをそのまま渡す
             let finalURL = try await exportFile(url: tempURL)
             log("💾 File saved to: \(finalURL.path(percentEncoded: false))")
             
@@ -235,12 +253,13 @@ class CryptoManager: ObservableObject {
         }
     }
 
+    @MainActor
     private func log(_ message: String) {
         print(message)
         logMessages.append(message)
     }
     
-    nonisolated private static func encryptStream(masterKey: SecKey, inputStream: InputStream, outputStream: OutputStream) throws {
+    nonisolated private static func encryptStream(masterKey: SecKey, inputStream: InputStream, outputStream: OutputStream, nonceSize: Int, bufferSize: Int) throws {
         let fileKey = SymmetricKey(size: .bits256)
         
         guard let masterPublicKey = SecKeyCopyPublicKey(masterKey) else {
@@ -249,72 +268,74 @@ class CryptoManager: ObservableObject {
         
         let algorithm: SecKeyAlgorithm = .eciesEncryptionCofactorX963SHA256AESGCM
         var error: Unmanaged<CFError>?
-        guard let encryptedFileKey = SecKeyCreateEncryptedData(masterPublicKey, algorithm, fileKey.withUnsafeBytes { Data($0) } as CFData, &error) as? Data else {
+        let fileKeyData = fileKey.withUnsafeBytes { Data($0) }
+        guard let encryptedFileKey = SecKeyCreateEncryptedData(masterPublicKey, algorithm, fileKeyData as CFData, &error) as? Data else {
             throw error?.takeRetainedValue() as? Error ?? CryptoError.encryptionFailed("Could not encrypt file key.")
         }
         
-        var encryptedKeyLength = UInt32(encryptedFileKey.count).bigEndian
-        _ = try outputStream.write(data: Data(bytes: &encryptedKeyLength, count: MemoryLayout<UInt32>.size))
-        _ = try outputStream.write(data: encryptedFileKey)
-        
-        let nonceBytes = AES.randomIV(12)
-        _ = try outputStream.write(data: Data(nonceBytes))
+        let nonceBytes = AES.randomIV(nonceSize)
         
         let gcm = GCM(iv: nonceBytes, mode: .detached)
-        let aes = try AES(key: fileKey.withUnsafeBytes { Array($0) }, blockMode: gcm, padding: .noPadding)
+        let aes = try AES(key: Array(fileKeyData), blockMode: gcm, padding: .noPadding)
         var encryptor = try aes.makeEncryptor()
-
-        var buffer = [UInt8](repeating: 0, count: 4096)
+        
+        var ciphertext = Data()
+        var buffer = [UInt8](repeating: 0, count: bufferSize)
+        
         while inputStream.hasBytesAvailable {
             let bytesRead = inputStream.read(&buffer, maxLength: buffer.count)
             if bytesRead < 0 { throw CryptoError.streamError("Input stream read error.") }
             if bytesRead == 0 { break }
             
-            let ciphertextChunk = try encryptor.update(withBytes: Array(buffer[0..<bytesRead]))
-            _ = try outputStream.write(data: Data(ciphertextChunk))
-            buffer.reset()
+            let chunk = try encryptor.update(withBytes: Array(buffer[0..<bytesRead]))
+            ciphertext.append(contentsOf: chunk)
         }
         
-        let finalCiphertextChunk = try encryptor.finish()
-        _ = try outputStream.write(data: Data(finalCiphertextChunk))
-        _ = try outputStream.write(data: Data(gcm.authenticationTag!))
+        let finalChunk = try encryptor.finish()
+        ciphertext.append(contentsOf: finalChunk)
+        
+        guard let tag = gcm.authenticationTag else {
+            throw CryptoError.encryptionFailed("Could not get authentication tag.")
+        }
+
+        var encryptedKeyLength = UInt32(encryptedFileKey.count).bigEndian
+        _ = try outputStream.write(data: Data(bytes: &encryptedKeyLength, count: MemoryLayout<UInt32>.size))
+        _ = try outputStream.write(data: encryptedFileKey)
+        _ = try outputStream.write(data: Data(nonceBytes))
+        _ = try outputStream.write(data: Data(tag))
+        _ = try outputStream.write(data: ciphertext)
     }
 
-    nonisolated private static func decryptStream(masterKey: SecKey, inputStream: InputStream, outputStream: OutputStream) throws {
+    nonisolated private static func decryptStream(masterKey: SecKey, inputStream: InputStream, outputStream: OutputStream, nonceSize: Int, tagSize: Int, bufferSize: Int) throws {
         let keyLengthData = try inputStream.readBytes(count: MemoryLayout<UInt32>.size)
         let keyLength = keyLengthData.withUnsafeBytes { $0.load(as: UInt32.self) }.bigEndian
         
         let encryptedFileKey = try inputStream.readBytes(count: Int(keyLength))
+        let nonceBytes = try inputStream.readBytes(count: nonceSize)
+        let tagBytes = try inputStream.readBytes(count: tagSize)
         
         let algorithm: SecKeyAlgorithm = .eciesEncryptionCofactorX963SHA256AESGCM
         var error: Unmanaged<CFError>?
         guard let decryptedFileKeyData = SecKeyCreateDecryptedData(masterKey, algorithm, Data(encryptedFileKey) as CFData, &error) as? Data else {
             throw error?.takeRetainedValue() as? Error ?? CryptoError.decryptionFailed("Could not decrypt file key. User may have cancelled authentication.")
         }
-        let fileKey = SymmetricKey(data: decryptedFileKeyData)
-        
-        let nonceBytes = try inputStream.readBytes(count: 12)
-        
-        var encryptedContent = Data()
-        var buffer = [UInt8](repeating: 0, count: 4096)
-        while inputStream.hasBytesAvailable {
-            let bytesRead = inputStream.read(&buffer, maxLength: 4096)
-            if bytesRead < 0 { throw CryptoError.streamError("Read error") }
-            if bytesRead == 0 { break }
-            encryptedContent.append(&buffer, count: bytesRead)
-        }
-        
-        let tagLength = 16
-        guard encryptedContent.count >= tagLength else { throw CryptoError.invalidFileFormat("File is too short for authentication tag.") }
-        let ciphertextBytes = Array(encryptedContent.dropLast(tagLength))
-        let tagBytes = Array(encryptedContent.suffix(tagLength))
         
         let gcm = GCM(iv: nonceBytes, authenticationTag: tagBytes)
-        let aes = try AES(key: fileKey.withUnsafeBytes { Array($0) }, blockMode: gcm, padding: .noPadding)
-        var decryptedBytes = try aes.decrypt(ciphertextBytes)
+        let aes = try AES(key: Array(decryptedFileKeyData), blockMode: gcm, padding: .noPadding)
+        var decryptor = try aes.makeDecryptor()
+
+        var buffer = [UInt8](repeating: 0, count: bufferSize)
+        while inputStream.hasBytesAvailable {
+            let bytesRead = inputStream.read(&buffer, maxLength: buffer.count)
+            if bytesRead < 0 { throw CryptoError.streamError("Read error") }
+            if bytesRead == 0 { break }
+            
+            let plaintextChunk = try decryptor.update(withBytes: Array(buffer[0..<bytesRead]))
+            _ = try outputStream.write(data: Data(plaintextChunk))
+        }
         
-        _ = try outputStream.write(data: Data(decryptedBytes))
-        decryptedBytes.reset()
+        let finalPlaintextChunk = try decryptor.finish()
+        _ = try outputStream.write(data: Data(finalPlaintextChunk))
     }
     
     @MainActor
@@ -322,8 +343,9 @@ class CryptoManager: ObservableObject {
         let controller = UIDocumentPickerViewController(forExporting: [url], asCopy: true)
         controller.shouldShowFileExtensions = true
 
-        let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene
-        let window = scene?.windows.first
+        guard let window = (UIApplication.shared.connectedScenes.first as? UIWindowScene)?.windows.first else {
+            throw CryptoError.streamError("Could not find active window scene.")
+        }
         
         return try await withCheckedThrowingContinuation { continuation in
             self.exportDelegateHolder = ExportDelegate(
@@ -331,7 +353,7 @@ class CryptoManager: ObservableObject {
                 onFailure: { error in continuation.resume(throwing: error) }
             )
             controller.delegate = self.exportDelegateHolder
-            window?.rootViewController?.present(controller, animated: true)
+            window.rootViewController?.present(controller, animated: true)
         }
     }
     
@@ -362,6 +384,7 @@ class SecureEnclaveManager {
             kSecAttrApplicationTag as String: keyTag
         ]
         let status = SecItemDelete(query as CFDictionary)
+        // It's not an error if the key doesn't exist to be deleted.
         guard status == errSecSuccess || status == errSecItemNotFound else {
             throw CryptoError.keyGenerationFailed("Could not delete existing key.")
         }
@@ -371,7 +394,14 @@ class SecureEnclaveManager {
         guard SecureEnclave.isAvailable else { throw CryptoError.secureEnclaveUnavailable }
         try? deleteKey()
         
-        let accessControl = SecAccessControlCreateWithFlags(kCFAllocatorDefault, kSecAttrAccessibleWhenUnlockedThisDeviceOnly, .privateKeyUsage, nil)!
+        // Add .userPresence flag to require authentication (Face ID, Touch ID, or passcode) for key usage.
+        let flags: SecAccessControlCreateFlags = [.privateKeyUsage, .userPresence]
+        let accessControl = SecAccessControlCreateWithFlags(
+            kCFAllocatorDefault,
+            kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
+            flags,
+            nil
+        )!
         
         let attributes: [String: Any] = [
             kSecAttrKeyType as String: kSecAttrKeyTypeECSECPrimeRandom,
@@ -396,15 +426,18 @@ class SecureEnclaveManager {
             kSecClass as String: kSecClassKey,
             kSecAttrApplicationTag as String: keyTag,
             kSecReturnRef as String: true,
+            // Provide an LAContext to allow the system to trigger an authentication prompt.
             kSecUseAuthenticationContext as String: LAContext()
         ]
         
         var item: CFTypeRef?
         let status = SecItemCopyMatching(query as CFDictionary, &item)
-        guard status == errSecSuccess, let key = item else {
+        
+        guard status == errSecSuccess, let item = item else {
             throw CryptoError.keyGenerationFailed("Key not found or user cancelled auth.")
         }
-        return key as! SecKey
+        // If successful, a force cast is safe here based on the query.
+        return item as! SecKey
     }
 }
 
@@ -449,12 +482,6 @@ nonisolated extension InputStream {
         let bytesRead = self.read(&buffer, maxLength: count)
         if bytesRead < count { throw CryptoError.streamError("Could not read required number of bytes. Expected \(count), got \(bytesRead).") }
         return buffer
-    }
-}
-
-nonisolated extension Array where Element == UInt8 {
-    mutating func reset() {
-        self = [UInt8](repeating: 0, count: self.count)
     }
 }
 
