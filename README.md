@@ -169,18 +169,4 @@ The application meets military-grade encryption requirements and implements best
 - **EncryptionHelpers**: Utility functions for encryption operations
 - **SecurityHelpers**: Security utilities (constant-time comparison, validation)
 
-## License
-
-[Add your license here]
-
-## Contributing
-
-[Add contribution guidelines here]
-
-## Support
-
-[Add support information here]
-
----
-
 **Note**: This application is designed for security-conscious users who need device-specific encryption. Always maintain backups of your master key recovery information if you need to transfer encrypted files between devices (though this is not currently supported by design).
