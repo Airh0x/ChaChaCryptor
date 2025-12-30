@@ -167,6 +167,16 @@ jobs:
         ls -lh *.ipa
         cd ../..
       
+    - name: Debug - Check IPA file
+      run: |
+        echo "Current directory: $(pwd)"
+        echo "GitHub ref: ${{ github.ref }}"
+        echo "GitHub event: ${{ github.event_name }}"
+        echo "Checking IPA file:"
+        ls -lh build/ipa/*.ipa || echo "IPA file not found!"
+        echo "Full path check:"
+        find . -name "*.ipa" -type f || echo "No IPA files found"
+      
     - name: Upload IPA Artifact
       uses: actions/upload-artifact@v4
       with:
@@ -175,21 +185,37 @@ jobs:
         retention-days: 30
         if-no-files-found: error
     
+    - name: Debug - Release info (tag)
+      if: startsWith(github.ref, 'refs/tags/v')
+      run: |
+        echo "Creating release from tag: ${{ github.ref }}"
+        echo "Tag name: ${GITHUB_REF#refs/tags/}"
+        echo "IPA file exists:"
+        ls -lh build/ipa/chachaCryptor-unsigned.ipa || echo "IPA file not found!"
+    
     - name: Create GitHub Release (from tag)
       if: startsWith(github.ref, 'refs/tags/v')
       uses: softprops/action-gh-release@v1
       with:
-        files: build/ipa/*.ipa
+        files: build/ipa/chachaCryptor-unsigned.ipa
         generate_release_notes: true
         draft: false
         prerelease: false
         token: ${{ secrets.GITHUB_TOKEN }}
     
+    - name: Debug - Release info (main)
+      if: github.ref == 'refs/heads/main'
+      run: |
+        echo "Creating release from main branch"
+        echo "Run number: ${{ github.run_number }}"
+        echo "IPA file path: build/ipa/chachaCryptor-unsigned.ipa"
+        ls -lh build/ipa/chachaCryptor-unsigned.ipa || echo "IPA file not found!"
+    
     - name: Create GitHub Release (from main branch)
       if: github.ref == 'refs/heads/main'
       uses: softprops/action-gh-release@v1
       with:
-        files: build/ipa/*.ipa
+        files: build/ipa/chachaCryptor-unsigned.ipa
         tag_name: release-${{ github.run_number }}
         name: Release Build #${{ github.run_number }}
         body: |
