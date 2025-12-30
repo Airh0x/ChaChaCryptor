@@ -6,14 +6,31 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		4C53052D2E28E86C00EC9B19 /* CryptoSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 4C53052C2E28E86C00EC9B19 /* CryptoSwift */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
-		4C53051D2E28E80600EC9B19 /* chachaCrypto.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = chachaCrypto.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4C53051D2E28E80600EC9B19 /* chachaCryptor.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = chachaCryptor.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		4C8F150E2E2B836F00D0FEA8 /* Exceptions for "chachaCryptor" folder in "chachaCryptor" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 4C53051C2E28E80600EC9B19 /* chachaCryptor */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		4C53051F2E28E80600EC9B19 /* chachaCrypto */ = {
+		4C53051F2E28E80600EC9B19 /* chachaCryptor */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = chachaCrypto;
+			exceptions = (
+				4C8F150E2E2B836F00D0FEA8 /* Exceptions for "chachaCryptor" folder in "chachaCryptor" target */,
+			);
+			path = chachaCryptor;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -23,6 +40,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4C53052D2E28E86C00EC9B19 /* CryptoSwift in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -32,7 +50,7 @@
 		4C5305142E28E80600EC9B19 = {
 			isa = PBXGroup;
 			children = (
-				4C53051F2E28E80600EC9B19 /* chachaCrypto */,
+				4C53051F2E28E80600EC9B19 /* chachaCryptor */,
 				4C53051E2E28E80600EC9B19 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -40,7 +58,7 @@
 		4C53051E2E28E80600EC9B19 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				4C53051D2E28E80600EC9B19 /* chachaCrypto.app */,
+				4C53051D2E28E80600EC9B19 /* chachaCryptor.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -48,9 +66,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		4C53051C2E28E80600EC9B19 /* chachaCrypto */ = {
+		4C53051C2E28E80600EC9B19 /* chachaCryptor */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 4C5305282E28E80700EC9B19 /* Build configuration list for PBXNativeTarget "chachaCrypto" */;
+			buildConfigurationList = 4C5305282E28E80700EC9B19 /* Build configuration list for PBXNativeTarget "chachaCryptor" */;
 			buildPhases = (
 				4C5305192E28E80600EC9B19 /* Sources */,
 				4C53051A2E28E80600EC9B19 /* Frameworks */,
@@ -61,13 +79,14 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				4C53051F2E28E80600EC9B19 /* chachaCrypto */,
+				4C53051F2E28E80600EC9B19 /* chachaCryptor */,
 			);
-			name = chachaCrypto;
+			name = chachaCryptor;
 			packageProductDependencies = (
+				4C53052C2E28E86C00EC9B19 /* CryptoSwift */,
 			);
-			productName = chachaCrypto;
-			productReference = 4C53051D2E28E80600EC9B19 /* chachaCrypto.app */;
+			productName = chachaCryptor;
+			productReference = 4C53051D2E28E80600EC9B19 /* chachaCryptor.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -85,7 +104,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 4C5305182E28E80600EC9B19 /* Build configuration list for PBXProject "chachaCrypto" */;
+			buildConfigurationList = 4C5305182E28E80600EC9B19 /* Build configuration list for PBXProject "chachaCryptor" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -94,12 +113,15 @@
 			);
 			mainGroup = 4C5305142E28E80600EC9B19;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				4C53052B2E28E86C00EC9B19 /* XCRemoteSwiftPackageReference "CryptoSwift" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 4C53051E2E28E80600EC9B19 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				4C53051C2E28E80600EC9B19 /* chachaCrypto */,
+				4C53051C2E28E80600EC9B19 /* chachaCryptor */,
 			);
 		};
 /* End PBXProject section */
@@ -254,33 +276,40 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = chachaCryptor/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = ChaChaCryptor;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = YES;
+				INFOPLIST_KEY_ITSEncryptionExportComplianceCode = "";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "Authentication is required to access passwords stored in your Keychain.";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
+				INFOPLIST_KEY_UIStatusBarHidden = YES;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = februarysnow.chachaCrypto;
+				PRODUCT_BUNDLE_IDENTIFIER = jp.Guard.chachaCryptor;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = auto;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TARGETED_DEVICE_FAMILY = 1;
 				XROS_DEPLOYMENT_TARGET = 26.0;
 			};
 			name = Debug;
@@ -298,33 +327,40 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = chachaCryptor/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = ChaChaCryptor;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = YES;
+				INFOPLIST_KEY_ITSEncryptionExportComplianceCode = "";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "Authentication is required to access passwords stored in your Keychain.";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
+				INFOPLIST_KEY_UIStatusBarHidden = YES;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = februarysnow.chachaCrypto;
+				PRODUCT_BUNDLE_IDENTIFIER = jp.Guard.chachaCryptor;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = auto;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TARGETED_DEVICE_FAMILY = 1;
 				XROS_DEPLOYMENT_TARGET = 26.0;
 			};
 			name = Release;
@@ -332,7 +368,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		4C5305182E28E80600EC9B19 /* Build configuration list for PBXProject "chachaCrypto" */ = {
+		4C5305182E28E80600EC9B19 /* Build configuration list for PBXProject "chachaCryptor" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				4C5305262E28E80700EC9B19 /* Debug */,
@@ -341,7 +377,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		4C5305282E28E80700EC9B19 /* Build configuration list for PBXNativeTarget "chachaCrypto" */ = {
+		4C5305282E28E80700EC9B19 /* Build configuration list for PBXNativeTarget "chachaCryptor" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				4C5305292E28E80700EC9B19 /* Debug */,
@@ -351,6 +387,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		4C53052B2E28E86C00EC9B19 /* XCRemoteSwiftPackageReference "CryptoSwift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/krzyzanowskim/CryptoSwift.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.9.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		4C53052C2E28E86C00EC9B19 /* CryptoSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4C53052B2E28E86C00EC9B19 /* XCRemoteSwiftPackageReference "CryptoSwift" */;
+			productName = CryptoSwift;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 4C5305152E28E80600EC9B19 /* Project object */;
 }

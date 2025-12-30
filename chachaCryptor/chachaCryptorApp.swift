@@ -1,6 +1,6 @@
 //
-//  chachaCryptoApp.swift
-//  chachaCrypto
+//  chachaCryptorApp.swift
+//  chachaCryptor
 //
 //  Created by KarUpas on 2025/07/17.
 //
@@ -8,7 +8,7 @@
 import SwiftUI
 
 @main
-struct chachaCryptoApp: App {
+struct chachaCryptorApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()

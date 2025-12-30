@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>NSFaceIDUsageDescription</key>
+	<string>This app uses Face ID to authenticate access to your encrypted files stored in the Secure Enclave.</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<false/>
+		<key>NSAllowsLocalNetworking</key>
+		<false/>
+		<key>NSAllowsArbitraryLoadsInWebContent</key>
+		<false/>
+		<key>NSAllowsArbitraryLoadsForMedia</key>
+		<false/>
+		<key>NSExceptionDomains</key>
+		<dict/>
+	</dict>
+</dict>
+</plist>
