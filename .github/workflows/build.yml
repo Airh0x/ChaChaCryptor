@@ -2,7 +2,9 @@ name: Build and Test
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main ]
+    tags:
+      - 'v*'
   pull_request:
     branches: [ main, develop ]
   workflow_dispatch:
@@ -104,3 +106,157 @@ jobs:
           build/
         retention-days: 7
         if-no-files-found: ignore
+
+  release:
+    name: Build and Release IPA
+    runs-on: macos-14
+    needs: build
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Select Xcode 16
+      run: |
+        if [ -d "/Applications/Xcode_16.2.app" ]; then
+          sudo xcode-select --switch /Applications/Xcode_16.2.app/Contents/Developer
+        elif [ -d "/Applications/Xcode_16.1.app" ]; then
+          sudo xcode-select --switch /Applications/Xcode_16.1.app/Contents/Developer
+        elif [ -d "/Applications/Xcode_16.0.app" ]; then
+          sudo xcode-select --switch /Applications/Xcode_16.0.app/Contents/Developer
+        elif [ -d "/Applications/Xcode.app" ]; then
+          sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
+        fi
+      
+    - name: Setup Apple Developer Certificate
+      env:
+        APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+        APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+      run: |
+        # Create variables
+        CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+        KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+        
+        # Decode certificate
+        echo "$APPLE_CERTIFICATE_BASE64" | base64 --decode > $CERTIFICATE_PATH
+        
+        # Create temporary keychain
+        security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+        security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+        security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+        
+        # Import certificate to keychain
+        security import $CERTIFICATE_PATH -P "$APPLE_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+        security list-keychain -d user -s $KEYCHAIN_PATH
+        
+        # Allow codesign to access the keychain
+        security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+        
+    - name: Setup Provisioning Profile
+      env:
+        PROVISIONING_PROFILE_BASE64: ${{ secrets.PROVISIONING_PROFILE_BASE64 }}
+      run: |
+        PROVISIONING_PROFILE_PATH="$HOME/Library/MobileDevice/Provisioning Profiles"
+        mkdir -p "$PROVISIONING_PROFILE_PATH"
+        
+        echo "$PROVISIONING_PROFILE_BASE64" | base64 --decode > "$PROVISIONING_PROFILE_PATH/profile.mobileprovision"
+        
+        # Get UUID from provisioning profile
+        UUID=$(grep -aA1 UUID "$PROVISIONING_PROFILE_PATH/profile.mobileprovision" | grep -o "[-A-Z0-9]\{36\}")
+        mv "$PROVISIONING_PROFILE_PATH/profile.mobileprovision" "$PROVISIONING_PROFILE_PATH/$UUID.mobileprovision"
+        echo "Provisioning Profile UUID: $UUID"
+        
+    - name: Resolve Swift Package Dependencies
+      run: |
+        xcodebuild -resolvePackageDependencies \
+          -project chachaCryptor.xcodeproj \
+          -scheme chachaCryptor
+      
+    - name: Create Export Options
+      run: |
+        UUID=$(grep -aA1 UUID "$HOME/Library/MobileDevice/Provisioning Profiles"/*.mobileprovision | grep -o "[-A-Z0-9]\{36\}" | head -1)
+        cat > ExportOptions.plist <<EOF
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0">
+        <dict>
+          <key>method</key>
+          <string>app-store</string>
+          <key>teamID</key>
+          <string>QVAJ3CU6LK</string>
+          <key>signingStyle</key>
+          <string>manual</string>
+          <key>signingCertificate</key>
+          <string>Apple Distribution</string>
+          <key>provisioningProfiles</key>
+          <dict>
+            <key>jp.Guard.chachaCryptor</key>
+            <string>$UUID</string>
+          </dict>
+          <key>uploadBitcode</key>
+          <false/>
+          <key>uploadSymbols</key>
+          <true/>
+          <key>compileBitcode</key>
+          <false/>
+        </dict>
+        </plist>
+        EOF
+        cat ExportOptions.plist
+      
+    - name: Build Archive
+      run: |
+        UUID=$(grep -aA1 UUID "$HOME/Library/MobileDevice/Provisioning Profiles"/*.mobileprovision | grep -o "[-A-Z0-9]\{36\}" | head -1)
+        xcodebuild archive \
+          -project chachaCryptor.xcodeproj \
+          -scheme chachaCryptor \
+          -destination 'generic/platform=iOS' \
+          -archivePath build/chachaCryptor.xcarchive \
+          -configuration Release \
+          CODE_SIGN_STYLE=Manual \
+          CODE_SIGN_IDENTITY="Apple Distribution" \
+          DEVELOPMENT_TEAM=QVAJ3CU6LK \
+          PROVISIONING_PROFILE_SPECIFIER="$UUID"
+      
+    - name: Export IPA
+      run: |
+        xcodebuild -exportArchive \
+          -archivePath build/chachaCryptor.xcarchive \
+          -exportPath build/ipa \
+          -exportOptionsPlist ExportOptions.plist
+        
+        # List exported files
+        ls -la build/ipa/
+      
+    - name: Upload to App Store Connect
+      env:
+        APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+        APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+        APP_STORE_CONNECT_API_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}
+      run: |
+        if [ -n "$APP_STORE_CONNECT_API_KEY_ID" ] && [ -n "$APP_STORE_CONNECT_ISSUER_ID" ] && [ -n "$APP_STORE_CONNECT_API_KEY_CONTENT" ]; then
+          # Create API key file
+          mkdir -p ~/.appstoreconnect/private_keys
+          echo "$APP_STORE_CONNECT_API_KEY_CONTENT" > ~/.appstoreconnect/private_keys/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8
+          
+          # Upload IPA using xcrun altool (requires Xcode 13+)
+          xcrun altool --upload-app \
+            --type ios \
+            --file "build/ipa/chachaCryptor.ipa" \
+            --apiKey "$APP_STORE_CONNECT_API_KEY_ID" \
+            --apiIssuer "$APP_STORE_CONNECT_ISSUER_ID" \
+            --verbose || echo "Upload failed - check API credentials or use Transporter app"
+        else
+          echo "App Store Connect API credentials not set. Skipping upload."
+          echo "IPA file is available as artifact."
+        fi
+      
+    - name: Upload IPA Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ipa-release
+        path: build/ipa/*.ipa
+        retention-days: 30
+        if-no-files-found: error
