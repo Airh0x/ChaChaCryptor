@@ -180,21 +180,16 @@ This project uses GitHub Actions for continuous integration and automated builds
   - iOS Simulator (iPhone 16 Pro, iOS 18.2)
   - iOS Device (generic platform)
 - **Artifacts**: Build artifacts are automatically archived and available for 7 days
-- **Release Builds**: IPA files are automatically generated and uploaded to App Store Connect when pushing to `main` branch or creating version tags (`v*`)
+- **Release Builds**: Unsigned IPA files are automatically generated when pushing to `main` branch or creating version tags (`v*`)
 
-#### Release Build Setup
+#### Release Build
 
-To enable automatic IPA generation and App Store Connect upload, configure the following GitHub Secrets:
+The workflow automatically generates an unsigned IPA file that can be:
+- Downloaded from GitHub Actions artifacts
+- Signed manually using your own certificates
+- Used for testing or distribution outside the App Store
 
-1. **APPLE_CERTIFICATE_BASE64**: Base64-encoded `.p12` certificate file (Apple Distribution)
-2. **APPLE_CERTIFICATE_PASSWORD**: Password for the certificate file
-3. **KEYCHAIN_PASSWORD**: Password for the temporary keychain (can be any secure string)
-4. **PROVISIONING_PROFILE_BASE64**: Base64-encoded `.mobileprovision` file for App Store distribution
-5. **APP_STORE_CONNECT_API_KEY_ID**: App Store Connect API Key ID (optional, for automatic upload)
-6. **APP_STORE_CONNECT_ISSUER_ID**: App Store Connect Issuer ID (optional)
-7. **APP_STORE_CONNECT_API_KEY_CONTENT**: App Store Connect API Key content (`.p8` file content, optional)
-
-**Note**: If App Store Connect API credentials are not provided, the IPA will still be generated and available as an artifact, but automatic upload will be skipped.
+**Note**: The generated IPA is unsigned and cannot be directly installed on devices or submitted to the App Store. You will need to sign it manually using Xcode or command-line tools if you want to distribute it.
 
 See `.github/workflows/build.yml` for the complete workflow configuration.
 
