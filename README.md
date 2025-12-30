@@ -2,6 +2,8 @@
 
 A military-grade file encryption application for iOS that provides hardware-bound encryption using Apple's Secure Enclave.
 
+![Build Status](https://github.com/Airh0x/ChaChaCryptor/workflows/Build%20and%20Test/badge.svg)
+
 ## Overview
 
 ChaChaCryptor is a secure file encryption tool designed for iOS devices. It employs a robust, multi-layered security architecture to protect user files, leveraging hardware-level protection provided by the Apple Secure Enclave. Files encrypted on one device can only be decrypted on that same device, ensuring maximum security for sensitive data.
@@ -168,5 +170,17 @@ The application meets military-grade encryption requirements and implements best
 - **EncryptionService**: Handles stream-based encryption/decryption
 - **EncryptionHelpers**: Utility functions for encryption operations
 - **SecurityHelpers**: Security utilities (constant-time comparison, validation)
+
+### CI/CD
+
+This project uses GitHub Actions for continuous integration and automated builds:
+
+- **Automated Builds**: Builds are automatically triggered on pushes to `main` and `develop` branches, and on pull requests
+- **Build Targets**: 
+  - iOS Simulator (iPhone 15, latest OS)
+  - iOS Device (generic platform)
+- **Artifacts**: Build artifacts are automatically archived and available for 7 days
+
+See `.github/workflows/build.yml` for the complete workflow configuration.
 
 **Note**: This application is designed for security-conscious users who need device-specific encryption. Always maintain backups of your master key recovery information if you need to transfer encrypted files between devices (though this is not currently supported by design).
