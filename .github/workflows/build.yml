@@ -16,6 +16,39 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       
+    - name: Select Xcode 16
+      run: |
+        # List available Xcode versions
+        echo "Available Xcode versions:"
+        ls -la /Applications/ | grep -i xcode || echo "No Xcode found"
+        # Try to use Xcode 16.x (required for project format 77)
+        if [ -d "/Applications/Xcode_16.2.app" ]; then
+          sudo xcode-select --switch /Applications/Xcode_16.2.app/Contents/Developer
+          echo "Selected Xcode_16.2.app"
+        elif [ -d "/Applications/Xcode_16.1.app" ]; then
+          sudo xcode-select --switch /Applications/Xcode_16.1.app/Contents/Developer
+          echo "Selected Xcode_16.1.app"
+        elif [ -d "/Applications/Xcode_16.0.app" ]; then
+          sudo xcode-select --switch /Applications/Xcode_16.0.app/Contents/Developer
+          echo "Selected Xcode_16.0.app"
+        elif [ -d "/Applications/Xcode.app" ]; then
+          # Check if default Xcode is 16.x
+          XCODE_VERSION=$(xcodebuild -version 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+' || echo "0.0")
+          MAJOR_VERSION=$(echo $XCODE_VERSION | cut -d. -f1)
+          if [ "$MAJOR_VERSION" -ge 16 ]; then
+            echo "Using default Xcode (version $XCODE_VERSION)"
+            sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
+          else
+            echo "Warning: Default Xcode version is $XCODE_VERSION, but Xcode 16+ is required"
+            echo "Trying to use default Xcode anyway..."
+            sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
+          fi
+        else
+          echo "Error: No Xcode found. Available versions:"
+          ls -la /Applications/ | grep -i xcode
+          exit 1
+        fi
+      
     - name: Show Xcode version
       run: xcodebuild -version
       
