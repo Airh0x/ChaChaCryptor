@@ -181,13 +181,19 @@ This project uses GitHub Actions for continuous integration and automated builds
   - iOS Device (generic platform)
 - **Artifacts**: Build artifacts are automatically archived and available for 7 days
 - **Release Builds**: Unsigned IPA files are automatically generated when pushing to `main` branch or creating version tags (`v*`)
+- **GitHub Releases**: IPA files are automatically uploaded to GitHub Releases:
+  - **Tag releases** (`v*`): Creates a full release with release notes
+  - **Main branch builds**: Creates a draft pre-release for testing
 
 #### Release Build
 
-The workflow automatically generates an unsigned IPA file that can be:
-- Downloaded from GitHub Actions artifacts
-- Signed manually using your own certificates
-- Used for testing or distribution outside the App Store
+The workflow automatically generates an unsigned IPA file and uploads it to:
+- **GitHub Actions artifacts** (30 days retention)
+- **GitHub Releases** (permanent storage)
+
+**Creating a Release:**
+1. Create a version tag: `git tag v1.0.0 && git push origin v1.0.0`
+2. The workflow will automatically create a GitHub Release with the IPA attached
 
 **Note**: The generated IPA is unsigned and cannot be directly installed on devices or submitted to the App Store. You will need to sign it manually using Xcode or command-line tools if you want to distribute it.
 

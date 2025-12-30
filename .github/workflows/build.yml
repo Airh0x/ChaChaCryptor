@@ -172,3 +172,36 @@ jobs:
         path: build/ipa/*.ipa
         retention-days: 30
         if-no-files-found: error
+    
+    - name: Create GitHub Release
+      if: startsWith(github.ref, 'refs/tags/v')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: build/ipa/*.ipa
+        generate_release_notes: true
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Upload to GitHub Release (from main branch)
+      if: github.ref == 'refs/heads/main'
+      uses: softprops/action-gh-release@v1
+      with:
+        files: build/ipa/*.ipa
+        tag_name: release-${{ github.run_number }}
+        name: Release Build #${{ github.run_number }}
+        body: |
+          ## Unsigned IPA Build
+          
+          This is an automated build from the main branch.
+          
+          **Build Number**: ${{ github.run_number }}
+          **Commit**: ${{ github.sha }}
+          **Branch**: ${{ github.ref_name }}
+          
+          ⚠️ **Note**: This IPA is unsigned and cannot be directly installed on devices. You will need to sign it manually if you want to distribute it.
+        draft: true
+        prerelease: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
